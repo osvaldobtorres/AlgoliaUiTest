@@ -108,87 +108,73 @@ export class AlgoliaService {
 
     // Get trending strategies (using recommend API or highest activity)
     static async getTrendingStrategies(subcategoryId: string, hitsPerPage: number = 10): Promise<SearchResponse> {
-        try {
-            const result = await client.searchSingleIndex({
-                indexName: 'Strategies_CountLast7Days_desc',
-                searchParams: {
-                    hitsPerPage,
-                    facetFilters: [[`tags:${subcategoryId}`]]
-                }
-            });
-            return result as SearchResponse;
-        } catch (error) {
-            // Fallback to regular search if sort fails
-            return this.searchStrategies('', `tags:"${subcategoryId}"`, hitsPerPage);
-        }
+        const result = await client.searchSingleIndex({
+            indexName: 'Strategies_CountLast7Days_desc',
+            searchParams: {
+                hitsPerPage,
+                facetFilters: [[`tags:${subcategoryId}`]]
+            }
+        });
+        return result as SearchResponse;
     }
 
     // Get strategies sorted by number of copies
     static async getStrategiesByCopies(subcategoryId: string, hitsPerPage: number = 10): Promise<SearchResponse> {
-        const response = await this.searchStrategies('', `tags:"${subcategoryId}"`, 50);
-
-        // Sort by copiesCount in descending order
-        const sortedHits = response.hits
-            .sort((a, b) => (b.copiesCount || 0) - (a.copiesCount || 0))
-            .slice(0, hitsPerPage);
-
-        return {
-            ...response,
-            hits: sortedHits,
-            nbHits: sortedHits.length
-        };
+        const result = await client.searchSingleIndex({
+            indexName: 'Strategies_TotalCopies_desc',
+            searchParams: {
+                hitsPerPage,
+                facetFilters: [[`tags:${subcategoryId}`]]
+            }
+        });
+        return result as SearchResponse;
     }
 
     // Get strategies sorted by total capital
     static async getStrategiesByCapital(subcategoryId: string, hitsPerPage: number = 10): Promise<SearchResponse> {
-        const response = await this.searchStrategies('', `tags:"${subcategoryId}"`, 50);
-
-        // Sort by totalCapital in descending order
-        const sortedHits = response.hits
-            .sort((a, b) => (b.totalCapital || 0) - (a.totalCapital || 0))
-            .slice(0, hitsPerPage);
-
-        return {
-            ...response,
-            hits: sortedHits,
-            nbHits: sortedHits.length
-        };
+        const result = await client.searchSingleIndex({
+            indexName: 'Strategies_TotalCapital_desc',
+            searchParams: {
+                hitsPerPage,
+                facetFilters: [[`tags:${subcategoryId}`]]
+            }
+        });
+        return result as SearchResponse;
     }
 
     // Get strategies with recent peak performance (lastMonthReturns > 0.1)
     static async getRecentPeakStrategies(subcategoryId: string, hitsPerPage: number = 10): Promise<SearchResponse> {
-        const response = await this.searchStrategies('', `tags:"${subcategoryId}"`, 50);
+        const result = await client.searchSingleIndex({
+            indexName: 'Strategies',
+            searchParams: {
+                query: '',
+                filters: 'lastMonthReturns > 0.1',
+                hitsPerPage: 50,
+                optionalFilters: ['CountLast7Days>10']
+            }
+        });
+        return result as SearchResponse;
+    }
 
-        // Filter by lastMonthReturns > 0.1 and sort by performance
-        const filteredHits = response.hits
-            .filter(strategy => (strategy.lastMonthReturns || 0) > 0.1)
-            .sort((a, b) => (b.lastMonthReturns || 0) - (a.lastMonthReturns || 0))
-            .slice(0, hitsPerPage);
-
-        return {
-            ...response,
-            hits: filteredHits,
-            nbHits: filteredHits.length
-        };
+    static async search(searchTerm: string, hitsPerPage: number = 5): Promise<SearchResponse> {
+        const result = await client.searchSingleIndex({
+            indexName: 'Strategies',
+            searchParams: {
+                query: searchTerm
+            }
+        });
+        return result as SearchResponse;
     }
 
     // Get random/discover strategies (mixed sorting)
     static async getDiscoverStrategies(subcategoryId: string, hitsPerPage: number = 10): Promise<SearchResponse> {
-        const response = await this.searchStrategies('', `tags:"${subcategoryId}"`, 50);
-
-        // Create a discovery score based on multiple factors
-        const scoredHits = response.hits.map(strategy => ({
-            ...strategy,
-            discoveryScore: this.calculateDiscoveryScore(strategy)
-        }))
-            .sort((a, b) => b.discoveryScore - a.discoveryScore)
-            .slice(0, hitsPerPage);
-
-        return {
-            ...response,
-            hits: scoredHits,
-            nbHits: scoredHits.length
-        };
+        const result = await client.searchSingleIndex({
+            indexName: 'Strategies',
+            searchParams: {
+                hitsPerPage: hitsPerPage
+            }
+        });
+        return result as SearchResponse;
     }
 
     // Get newest strategies (by creation date)
@@ -237,30 +223,16 @@ export class AlgoliaService {
 
     // Get long time in market strategies (CreatedAt > 1 year ago)
     static async getLongTimeInMarketStrategies(subcategoryId: string, hitsPerPage: number = 10): Promise<SearchResponse> {
-        const response = await this.searchStrategies('', `tags:"${subcategoryId}"`, 50);
-
-        const oneYearAgo = new Date();
-        oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
-
-        // Filter by strategies created more than 1 year ago
-        const filteredHits = response.hits
-            .filter(strategy => {
-                const createdDate = new Date(strategy.CreatedAt);
-                return createdDate < oneYearAgo;
-            })
-            .sort((a, b) => {
-                // Sort by oldest first (most experienced)
-                const dateA = new Date(a.CreatedAt).getTime();
-                const dateB = new Date(b.CreatedAt).getTime();
-                return dateA - dateB;
-            })
-            .slice(0, hitsPerPage);
-
-        return {
-            ...response,
-            hits: filteredHits,
-            nbHits: filteredHits.length
-        };
+        const result = await client.searchSingleIndex({
+            indexName: 'Strategies',
+            searchParams: {
+                query: '',
+                filters: 'lastMonthReturns > 0.1',
+                hitsPerPage: 50,
+                optionalFilters: ['CountLast7Days>10']
+            }
+        });
+        return result as SearchResponse;
     }
 
     // Helper method to calculate discovery score

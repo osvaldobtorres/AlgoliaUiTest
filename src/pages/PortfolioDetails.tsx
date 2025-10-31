@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { ArrowLeft, TrendingUp, Users, Copy } from 'lucide-react';
 import { investmentProducts } from '../data/mockData';
 import ProductCard from '../components/ProductCard';
+import BlueApiService, { BluePortfolioData, Equity } from '../services/blueApiService';
 import './PortfolioDetails.css';
 
 interface Asset {
@@ -23,48 +24,81 @@ interface CopierProfile {
 const PortfolioDetails: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
+    const [portfolioData, setPortfolioData] = useState<BluePortfolioData | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
     const portfolio = investmentProducts.find(p => p.id === id);
+
+    // Fetch portfolio data from Blue API
+    useEffect(() => {
+        const fetchPortfolioData = async () => {
+            if (!id) return;
+
+            try {
+                setLoading(true);
+                setError(null);
+                const data = await BlueApiService.getPortfolioById(id);
+                setPortfolioData(data);
+            } catch (err) {
+                console.error('Error fetching portfolio data:', err);
+                setError('Failed to load portfolio data');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchPortfolioData();
+    }, [id]);
 
     const handleGoBack = () => {
         navigate(-1);
     };
 
-    if (!portfolio) {
+    if (loading) {
         return (
             <div className="portfolio-details">
                 <div className="portfolio-header">
                     <button className="back-button" onClick={handleGoBack}>
                         <ArrowLeft size={20} />
                     </button>
-                    <h1>Portfolio not found</h1>
+                    <h1>Loading...</h1>
                 </div>
             </div>
         );
     }
 
-    // Mock data for portfolio breakdown
-    const portfolioAssets: Asset[] = [
-        { ticker: 'AAPL', name: 'Apple Inc.', sector: 'Technology', allocation: 15.2 },
-        { ticker: 'MSFT', name: 'Microsoft Corp.', sector: 'Technology', allocation: 12.8 },
-        { ticker: 'NVDA', name: 'NVIDIA Corp.', sector: 'Technology', allocation: 10.5 },
-        { ticker: 'GOOGL', name: 'Alphabet Inc.', sector: 'Technology', allocation: 9.3 },
-        { ticker: 'AMZN', name: 'Amazon.com Inc.', sector: 'Consumer Discretionary', allocation: 8.7 },
-        { ticker: 'TSLA', name: 'Tesla Inc.', sector: 'Consumer Discretionary', allocation: 7.9 },
-        { ticker: 'META', name: 'Meta Platforms', sector: 'Technology', allocation: 6.8 },
-        { ticker: 'BRK.B', name: 'Berkshire Hathaway', sector: 'Financial Services', allocation: 5.4 },
-        { ticker: 'V', name: 'Visa Inc.', sector: 'Financial Services', allocation: 4.7 },
-        { ticker: 'JNJ', name: 'Johnson & Johnson', sector: 'Healthcare', allocation: 4.2 }
-    ];
+    if (error || (!portfolioData && !portfolio)) {
+        return (
+            <div className="portfolio-details">
+                <div className="portfolio-header">
+                    <button className="back-button" onClick={handleGoBack}>
+                        <ArrowLeft size={20} />
+                    </button>
+                    <h1>{error || 'Portfolio not found'}</h1>
+                </div>
+            </div>
+        );
+    }
 
-    // Mock similar portfolios
+    // Convert Blue API data to our Asset format
+    const portfolioAssets: Asset[] = portfolioData ? 
+        portfolioData.currentAllocation.equities.map(equity => ({
+            ticker: equity.instrumentDto.ticker,
+            name: equity.instrumentDto.companyName,
+            sector: equity.instrumentDto.sector || 'Unknown',
+            allocation: parseFloat(equity.fraction) * 100 // Convert fraction to percentage
+        })).sort((a, b) => b.allocation - a.allocation) // Sort by allocation descending
+        : [];
+
+    // Mock similar portfolios (fallback to existing logic)
     const similarPortfolios = investmentProducts.filter(p =>
-        p.id !== portfolio.id && p.category === portfolio.category
+        portfolio && p.id !== portfolio.id && p.category === portfolio.category
     ).slice(0, 4);
 
-    // Mock portfolios copied by same users
+    // Mock portfolios copied by same users (fallback to existing logic)
     const relatedPortfolios = investmentProducts.filter(p =>
-        p.id !== portfolio.id
+        portfolio && p.id !== portfolio.id
     ).slice(0, 4);
 
     // Mock copier profiles
@@ -126,16 +160,22 @@ const PortfolioDetails: React.FC = () => {
                 </button>
                 <div className="portfolio-info">
                     <div className="portfolio-main-info">
-                        <h1 className="portfolio-name">{portfolio.name}</h1>
-                        <span className="portfolio-ticker">{portfolio.ticker || 'PORTFOLIO'}</span>
+                        <h1 className="portfolio-name">
+                            {portfolioData ? portfolioData.strategyInfo.strategyName : (portfolio?.name || 'Unknown Portfolio')}
+                        </h1>
+                        <span className="portfolio-ticker">
+                            {portfolioData ? portfolioData.strategyInfo.tickerName : (portfolio?.ticker || 'PORTFOLIO')}
+                        </span>
                     </div>
-                    <p className="portfolio-description">{portfolio.description}</p>
+                    <p className="portfolio-description">
+                        {portfolioData?.strategyInfo?.strategyTagline}
+                    </p>
                 </div>
             </div>
 
             <div className="strategy-description-container">
                 <p className="discovery-subtitle">
-                    Description Here
+                    {`${portfolioData?.strategyInfo?.strategyDescription}`}
                 </p>
             </div>
 
@@ -231,26 +271,30 @@ const PortfolioDetails: React.FC = () => {
             <div className="breakdown-section">
                 <h2>Portfolio Composition</h2>
                 <div className="assets-list">
-                    {portfolioAssets.map((asset, index) => (
-                        <div key={asset.ticker} className="asset-item">
-                            <div className="asset-info">
-                                <div className="asset-main">
-                                    <span className="asset-ticker">{asset.ticker}</span>
-                                    <span className="asset-name">{asset.name}</span>
+                    {portfolioAssets.length > 0 ? (
+                        portfolioAssets.map((asset, index) => (
+                            <div key={asset.ticker} className="asset-item">
+                                <div className="asset-info">
+                                    <div className="asset-main">
+                                        <span className="asset-ticker">{asset.ticker}</span>
+                                        <span className="asset-name">{asset.name}</span>
+                                    </div>
+                                    <span className="asset-sector">{asset.sector}</span>
                                 </div>
-                                <span className="asset-sector">{asset.sector}</span>
-                            </div>
-                            <div className="asset-allocation">
-                                <span className="allocation-percentage">{asset.allocation}%</span>
-                                <div className="allocation-bar">
-                                    <div
-                                        className="allocation-fill"
-                                        style={{ width: `${(asset.allocation / 20) * 100}%` }}
-                                    />
+                                <div className="asset-allocation">
+                                    <span className="allocation-percentage">{asset.allocation.toFixed(1)}%</span>
+                                    <div className="allocation-bar">
+                                        <div
+                                            className="allocation-fill"
+                                            style={{ width: `${Math.min(asset.allocation, 100)}%` }}
+                                        />
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    ))}
+                        ))
+                    ) : (
+                        <p>No portfolio composition data available.</p>
+                    )}
                 </div>
             </div>
 

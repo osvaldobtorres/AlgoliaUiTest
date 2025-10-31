@@ -1,13 +1,15 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { categories } from '../data/mockData';
 import { ArrowLeft, TrendingUp } from 'lucide-react';
 import './Discovery.css';
+import { AlgoliaService } from '../services/algoliaService';
 
 const Discovery: React.FC = () => {
     const navigate = useNavigate();
     const [searchQuery, setSearchQuery] = useState('');
     const [isSearchFocused, setIsSearchFocused] = useState(false);
+    const [searchResults, setSearchResults] = useState<any>([]);
 
     const handleCategoryClick = (categoryId: string) => {
         navigate(`/category/${categoryId}`);
@@ -28,6 +30,17 @@ const Discovery: React.FC = () => {
             setIsSearchFocused(true);
         }
     };
+
+    const getSearchResults = async () => {
+        const results = await AlgoliaService.search(searchQuery);
+        setSearchResults(results.hits);
+    }
+
+    useEffect(() => {
+        if (searchQuery.length != 0) {
+            getSearchResults();
+        }
+    }, [searchQuery]);
 
     // Mock search data
     const popularSearches = [
@@ -102,12 +115,12 @@ const Discovery: React.FC = () => {
                             <div className="search-section">
                                 <h3 className="search-section-title">Matching Portfolios</h3>
                                 <div className="matching-portfolios">
-                                    {matchingPortfolios.map((portfolio) => (
+                                    {searchResults.map((portfolio: any) => (
                                         <div key={portfolio.id} className="portfolio-result">
-                                            <div className="portfolio-avatar">{portfolio.avatar}</div>
+                                            <img className="portfolio-avatar" src={portfolio.ProfileImageUrl}/>
                                             <div className="portfolio-info">
-                                                <div className="portfolio-name">{portfolio.name}</div>
-                                                <div className="portfolio-ticker">{portfolio.ticker}</div>
+                                                <div className="portfolio-name">{portfolio.StrategyName}</div>
+                                                <div className="portfolio-ticker">{portfolio.StrategyTicker}</div>
                                             </div>
                                         </div>
                                     ))}

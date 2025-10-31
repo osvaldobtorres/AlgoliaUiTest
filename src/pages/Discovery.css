@@ -380,5 +380,6 @@
 .portfolio-ticker {
   font-size: 0.8rem;
   color: var(--text-tertiary);
+  display: inline;
   font-family: 'Courier New', monospace;
 }
