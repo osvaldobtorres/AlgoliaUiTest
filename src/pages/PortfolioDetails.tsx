@@ -1,5 +1,5 @@
 import React from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { ArrowLeft, TrendingUp, Users, Copy } from 'lucide-react';
 import { investmentProducts } from '../data/mockData';
 import ProductCard from '../components/ProductCard';
@@ -22,16 +22,21 @@ interface CopierProfile {
 
 const PortfolioDetails: React.FC = () => {
     const { id } = useParams<{ id: string }>();
+    const navigate = useNavigate();
 
     const portfolio = investmentProducts.find(p => p.id === id);
+
+    const handleGoBack = () => {
+        navigate(-1);
+    };
 
     if (!portfolio) {
         return (
             <div className="portfolio-details">
                 <div className="portfolio-header">
-                    <Link to="/products" className="back-button">
+                    <button className="back-button" onClick={handleGoBack}>
                         <ArrowLeft size={20} />
-                    </Link>
+                    </button>
                     <h1>Portfolio not found</h1>
                 </div>
             </div>
@@ -116,9 +121,9 @@ const PortfolioDetails: React.FC = () => {
         <div className="portfolio-details">
             {/* Header */}
             <div className="portfolio-header">
-                <Link to="/products" className="back-button">
+                <button className="back-button" onClick={handleGoBack}>
                     <ArrowLeft size={20} />
-                </Link>
+                </button>
                 <div className="portfolio-info">
                     <div className="portfolio-main-info">
                         <h1 className="portfolio-name">{portfolio.name}</h1>

@@ -228,3 +228,157 @@
 .huge-grid {
     grid-template-columns: 1fr !important;
 }
+
+/* Search Overlay */
+.search-overlay {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 480px;
+  height: 100vh;
+  background: var(--bg-primary);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+}
+
+.search-overlay-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.search-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 20px 16px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--bg-primary);
+}
+
+.search-back-button {
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  cursor: pointer;
+  padding: 8px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease;
+}
+
+.search-back-button:hover {
+  background: var(--bg-secondary);
+}
+
+.search-overlay-input {
+  flex: 1;
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  font-size: 1rem;
+  outline: none;
+}
+
+.search-overlay-input::placeholder {
+  color: var(--text-tertiary);
+}
+
+.search-results {
+  flex: 1;
+  padding: 20px 16px;
+  overflow-y: auto;
+}
+
+.search-section {
+  margin-bottom: 32px;
+}
+
+.search-section-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 16px;
+}
+
+.popular-searches {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.popular-search-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.popular-search-item:hover {
+  opacity: 0.7;
+}
+
+.trending-icon {
+  color: var(--text-tertiary);
+}
+
+.popular-search-item span {
+  font-size: 0.95rem;
+  color: var(--text-primary);
+}
+
+.matching-portfolios {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.portfolio-result {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.portfolio-result:hover {
+  opacity: 0.7;
+}
+
+.portfolio-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-md);
+  background: var(--bg-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  border: 1px solid var(--border-subtle);
+}
+
+.portfolio-info {
+  flex: 1;
+}
+
+.portfolio-name {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+}
+
+.portfolio-ticker {
+  font-size: 0.8rem;
+  color: var(--text-tertiary);
+  font-family: 'Courier New', monospace;
+}
