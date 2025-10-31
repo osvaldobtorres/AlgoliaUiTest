@@ -15,18 +15,7 @@ const BottomNavigation: React.FC = () => {
   ];
 
   return (
-    <div className="bottom-navigation">
-      {navItems.map((item) => (
-        <button
-          key={item.id}
-          className={`nav-item ${item.active && location.pathname !== '/premium' && location.pathname !== '/leaderboard' && location.pathname !== '/activity' ? 'active' : ''}`}
-          onClick={() => navigate(item.path)}
-        >
-          <span className="nav-icon">{item.icon}</span>
-          <span className="nav-label">{item.label}</span>
-        </button>
-      ))}
-    </div>
+    <></>
   );
 };
 

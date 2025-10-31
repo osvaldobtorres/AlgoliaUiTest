@@ -18,7 +18,7 @@ const Discovery: React.FC = () => {
                 <input
                     type="text"
                     className="search-bar"
-                    placeholder="Search a stock and see relevant portfolios..."
+                    placeholder="Search portfolios"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                 />
@@ -67,6 +67,21 @@ const Discovery: React.FC = () => {
                             </h3>
                         </div>
                     ))}
+                </div>
+            </div>
+
+            <div className="categories-section">
+                <h2>Dub AI</h2>
+                <div className="portfolio-grid huge-grid">
+                    <div
+                        className="action-button"
+                        onClick={() => console.log('Clicked')}
+                    >
+                        <h3>
+                            Talk to Dub AI
+                            <span className="action-arrow">›</span>
+                        </h3>
+                    </div>
                 </div>
             </div>
         </div>

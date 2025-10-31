@@ -35,19 +35,8 @@ const SubCategories: React.FC = () => {
                 </div>
             </div>
 
-            {/* Search bar */}
-            <div className="discovery-search search-bar-container small-padding-top">
-                <input
-                    type="text"
-                    className="search-bar"
-                    placeholder="Search a stock and see relevant portfolios..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                />
-            </div>
-
             {/* Header */}
-            <div className="discovery-header search-bar-container">
+            <div className="discovery-header search-bar-container small-padding-top">
                 <p className="discovery-subtitle">
                     {category.detailedDescription}
                 </p>

@@ -69,7 +69,6 @@ const ProductsPage: React.FC = () => {
 
         {categoryRows.length === 0 && (
           <div className="empty-state">
-            <div className="empty-icon">📊</div>
             <h3>No products found</h3>
             <p>Products for this category will be added soon.</p>
           </div>

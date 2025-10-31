@@ -1,7 +1,7 @@
 .discovery-page {
   min-height: 100vh;
   background: var(--bg-primary);
-  padding: 20px 16px 100px 16px; /* Extra bottom padding for navigation */
+  padding: 20px 16px 20px 16px; /* Extra bottom padding for navigation */
   color: var(--text-primary);
 }
 
@@ -223,4 +223,8 @@
     max-width: 480px;
     margin: 0 auto;
   }
+}
+
+.huge-grid {
+    grid-template-columns: 1fr !important;
 }

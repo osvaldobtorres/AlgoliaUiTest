@@ -2,7 +2,7 @@
   min-height: 100vh;
   background: var(--bg-primary);
   color: var(--text-primary);
-  padding-bottom: 100px; /* Space for bottom navigation */
+  padding-bottom: 20px; /* Space for bottom navigation */
 }
 
 .subcategories-header {
@@ -131,7 +131,6 @@
   left: 0;
   right: 0;
   height: 2px;
-  background: var(--accent-gradient);
   opacity: 0;
   transition: opacity 0.3s ease;
 }
@@ -139,7 +138,6 @@
 .subcategory-card:hover {
   transform: translateY(-4px);
   background: var(--bg-card-hover);
-  border-color: rgba(255, 107, 53, 0.3);
 }
 
 .subcategory-card:hover::before {
