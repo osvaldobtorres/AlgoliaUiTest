@@ -13,6 +13,7 @@ export interface AlgoliaStrategy {
   StrategyTicker: string;
   AccountId: number;
   UserUuid: string;
+  profileImageUrl: string;
   StrategyDescription: string;
   StrategyTagline: string;
   lastRebalanceDate: string;
@@ -121,7 +122,9 @@ export class AlgoliaService {
       copiesCount: strategy.copiesCount,
       lastMonthReturns: strategy.lastMonthReturns,
       totalReturns: strategy.totalReturns,
-      currentAllocation: strategy.currentAllocation
+      currentAllocation: strategy.currentAllocation,
+      externalId: strategy.ExternalId,
+      profileImage: strategy.profileImageUrl ?? 'https://d1vuy7y9jvyriv.cloudfront.net/portfolios/default/default.png'
     };
   }
 }

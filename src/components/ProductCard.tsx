@@ -3,7 +3,7 @@ import { InvestmentProduct } from '../types/investment';
 import './ProductCard.css';
 
 interface ProductCardProps {
-  product: InvestmentProduct;
+  product: any;
 }
 
 const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
@@ -54,23 +54,24 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
     return points.join(' ');
   };
 
+  console.log({product})
+
   return (
     <div className="product-card">
       <div className="card-container">
         {/* Header with title and ticker */}
         <div className="card-header">
           <p className="card-title">{product.name}</p>
-          <span className="card-ticker">{ticker}</span>
+          <span className="card-ticker">{product.ticker}</span>
         </div>
 
         {/* Content with icon and description */}
         <div className="card-content">
-          <div 
+          <img 
             className="card-icon"
-            style={{ backgroundColor: imageColor }}
-          >
-            <span>{product.category.charAt(0)}</span>
-          </div>
+            src={product.profileImage}
+            alt={product.name}
+          />
           <p className="card-description">{product.description}</p>
         </div>
 
@@ -79,14 +80,14 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           <div className="metric-item">
             <span 
               className="performance-value"
-              style={{ color: getPerformanceColor(performance) }}
+              style={{ color: getPerformanceColor(product.lastMonthReturns) }}
             >
-              {parseFloat(performance) >= 0 ? '+' : ''}{performance}%
+              {parseFloat(product.lastMonthReturns) * 100 >= 0 ? '+' : ''}{(product.lastMonthReturns * 100).toFixed(2)}%
             </span>
             <span className="metric-label">30D returns</span>
           </div>
           <div className="metric-item">
-            <span className="copiers-value">{copiers.toLocaleString()}</span>
+            <span className="copiers-value">{product.copiesCount ?? 0}</span>
             <span className="metric-label">copiers</span>
           </div>
         </div>

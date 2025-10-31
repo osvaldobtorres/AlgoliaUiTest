@@ -25,7 +25,7 @@ export interface InvestmentProduct {
   minimumAmount: number;
   category: string;
   subCategoryId: string;
-  image?: string;
+  profileImage?: string;
   ticker?: string;
 }
 
