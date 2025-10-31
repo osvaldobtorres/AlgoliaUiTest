@@ -1,0 +1,7 @@
+.App {
+  min-height: 100vh;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  position: relative;
+  padding-bottom: 80px; /* Space for bottom navigation */
+}
