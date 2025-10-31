@@ -10,12 +10,6 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background: #0A0A0B;
-  background-image: 
-    radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-    radial-gradient(circle at 80% 80%, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-    linear-gradient(45deg, rgba(255, 255, 255, 0.01) 25%, transparent 25%),
-    linear-gradient(-45deg, rgba(255, 255, 255, 0.01) 25%, transparent 25%);
-  background-size: 60px 60px, 60px 60px, 30px 30px, 30px 30px;
   color: #FFFFFF;
   line-height: 1.5;
   -webkit-tap-highlight-color: transparent;
