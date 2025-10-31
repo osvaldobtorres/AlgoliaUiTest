@@ -27,26 +27,81 @@ const ProductsPage: React.FC = () => {
         setLoading(true);
         setError(null);
 
-        // Get strategies by subcategory
-        const response = await AlgoliaService.getStrategiesBySubcategory(subCategoryId, 50);
+        console.log('Loading strategies for subcategoryId:', subCategoryId);
         
-        if (response.hits.length === 0) {
-          // If no results for specific subcategory, get by main category
-          const mainCategory = subCategoryId.split('::')[0];
-          const fallbackResponse = await AlgoliaService.getStrategiesByCategory(mainCategory, 50);
-          
-          if (fallbackResponse.hits.length > 0) {
-            // Group by sector/theme
-            const grouped = groupStrategiesByType(fallbackResponse.hits);
-            setProductGroups(grouped);
-          } else {
-            setProductGroups([]);
-          }
-        } else {
-          // Group the results
-          const grouped = groupStrategiesByType(response.hits);
-          setProductGroups(grouped);
+        // Debug: check available tags on first load
+        if (subCategoryId === 'sector::technology_ai') {
+          await AlgoliaService.debugAvailableTags(100);
         }
+        
+        // Load different sections in parallel
+        const [
+          trendingResponse,
+          copiesResponse,
+          capitalResponse,
+          peakResponse,
+          discoverResponse,
+          freshResponse,
+          diversifiedResponse,
+          longTimeResponse
+        ] = await Promise.all([
+          AlgoliaService.getTrendingStrategies(subCategoryId, 10),
+          AlgoliaService.getStrategiesByCopies(subCategoryId, 10),
+          AlgoliaService.getStrategiesByCapital(subCategoryId, 10),
+          AlgoliaService.getRecentPeakStrategies(subCategoryId, 10),
+          AlgoliaService.getDiscoverStrategies(subCategoryId, 10),
+          AlgoliaService.getFreshStrategies(subCategoryId, 10),
+          AlgoliaService.getDiversifiedStrategies(subCategoryId, 10),
+          AlgoliaService.getLongTimeInMarketStrategies(subCategoryId, 10)
+        ]);
+        
+        console.log('Responses received:', {
+          trending: trendingResponse.hits.length,
+          copies: copiesResponse.hits.length,
+          capital: capitalResponse.hits.length,
+          peak: peakResponse.hits.length,
+          discover: discoverResponse.hits.length,
+          fresh: freshResponse.hits.length,
+          diversified: diversifiedResponse.hits.length,
+          longTime: longTimeResponse.hits.length
+        });
+
+        const groups: ProductGroup[] = [];
+
+        // Add sections with results
+        if (trendingResponse.hits.length > 0) {
+          groups.push({ title: 'Trending', strategies: trendingResponse.hits });
+        }
+        
+        if (copiesResponse.hits.length > 0) {
+          groups.push({ title: 'Most Copied', strategies: copiesResponse.hits });
+        }
+        
+        if (capitalResponse.hits.length > 0) {
+          groups.push({ title: 'Highest Capital', strategies: capitalResponse.hits });
+        }
+        
+        if (peakResponse.hits.length > 0) {
+          groups.push({ title: 'Recent Peak', strategies: peakResponse.hits });
+        }
+        
+        if (discoverResponse.hits.length > 0) {
+          groups.push({ title: 'Discover', strategies: discoverResponse.hits });
+        }
+        
+        if (freshResponse.hits.length > 0) {
+          groups.push({ title: 'Fresh', strategies: freshResponse.hits });
+        }
+        
+        if (diversifiedResponse.hits.length > 0) {
+          groups.push({ title: 'Diversified', strategies: diversifiedResponse.hits });
+        }
+        
+        if (longTimeResponse.hits.length > 0) {
+          groups.push({ title: 'Long Time in Market', strategies: longTimeResponse.hits });
+        }
+
+        setProductGroups(groups);
       } catch (err) {
         console.error('Error loading strategies:', err);
         setError('Failed to load strategies');
@@ -57,31 +112,6 @@ const ProductsPage: React.FC = () => {
 
     loadStrategies();
   }, [subCategoryId]);
-
-  const groupStrategiesByType = (strategies: AlgoliaStrategy[]): ProductGroup[] => {
-    const groups: { [key: string]: AlgoliaStrategy[] } = {};
-    
-    strategies.forEach(strategy => {
-      // Group by primary tag or sector
-      const primaryTag = strategy.tags.find(tag => 
-        tag.includes('sector:') || tag.includes('thesis:') || tag.includes('stage:')
-      );
-      
-      const groupKey = primaryTag 
-        ? primaryTag.replace(/[_:]/g, ' ').replace(/^\w/, c => c.toUpperCase())
-        : 'Other Strategies';
-      
-      if (!groups[groupKey]) {
-        groups[groupKey] = [];
-      }
-      groups[groupKey].push(strategy);
-    });
-
-    return Object.entries(groups).map(([title, strategies]) => ({
-      title,
-      strategies: strategies.slice(0, 10) // Limit per group
-    }));
-  };
 
   if (!subCategory) {
     return <div>Subcategory not found</div>;
