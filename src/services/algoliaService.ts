@@ -179,57 +179,43 @@ export class AlgoliaService {
 
     // Get newest strategies (by creation date)
     static async getFreshStrategies(subcategoryId: string, hitsPerPage: number = 10): Promise<SearchResponse> {
-        const response = await this.searchStrategies('', `tags:"${subcategoryId}"`, 50);
+        const THIRTY_DAYS = 30 * 24 * 60 * 60;
+        const now = Math.floor(Date.now() / 1000);
+        const minCreatedAt = now - THIRTY_DAYS;
 
-        // Sort by CreatedAt or PublishingDate in descending order (newest first)
-        const sortedHits = response.hits
-            .sort((a, b) => {
-                const dateA = new Date(a.PublishingDate || a.CreatedAt).getTime();
-                const dateB = new Date(b.PublishingDate || b.CreatedAt).getTime();
-                return dateB - dateA;
-            })
-            .slice(0, hitsPerPage);
-
-        return {
-            ...response,
-            hits: sortedHits,
-            nbHits: sortedHits.length
-        };
+        const result = await client.searchSingleIndex({
+            indexName: 'Strategies',
+            searchParams: {
+                filters: `CreatedAt >= ${minCreatedAt}`,
+                hitsPerPage: hitsPerPage
+            }
+        });
+        return result as SearchResponse;
     }
 
     // Get diversified strategies (more than 10 tickers in allocation)
     static async getDiversifiedStrategies(subcategoryId: string, hitsPerPage: number = 10): Promise<SearchResponse> {
-        const response = await this.searchStrategies('', `tags:"${subcategoryId}"`, 50);
-
-        // Filter by strategies with more than 10 tickers and sort by diversity
-        const filteredHits = response.hits
-            .filter(strategy => {
-                const allocation = strategy.currentAllocation || [];
-                return allocation.length > 10;
-            })
-            .sort((a, b) => {
-                const tickersA = (a.currentAllocation || []).length;
-                const tickersB = (b.currentAllocation || []).length;
-                return tickersB - tickersA; // Sort by most diversified first
-            })
-            .slice(0, hitsPerPage);
-
-        return {
-            ...response,
-            hits: filteredHits,
-            nbHits: filteredHits.length
-        };
+        const result = await client.searchSingleIndex({
+            indexName: 'Strategies',
+            searchParams: {
+                filters: `numberOfTickers >= 10`,
+                hitsPerPage: hitsPerPage
+            }
+        });
+        return result as SearchResponse;
     }
 
     // Get long time in market strategies (CreatedAt > 1 year ago)
     static async getLongTimeInMarketStrategies(subcategoryId: string, hitsPerPage: number = 10): Promise<SearchResponse> {
+        const ONE_YEAR = 365 * 24 * 60 * 60;
+        const now = Math.floor(Date.now() / 1000);
+        const maxCreatedAt = now - ONE_YEAR;
+
         const result = await client.searchSingleIndex({
             indexName: 'Strategies',
             searchParams: {
-                query: '',
-                filters: 'lastMonthReturns > 0.1',
-                hitsPerPage: 50,
-                optionalFilters: ['CountLast7Days>10']
+                filters: `CreatedAt <= ${maxCreatedAt}`,
+                hitsPerPage: hitsPerPage
             }
         });
         return result as SearchResponse;
