@@ -54,8 +54,6 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
     return points.join(' ');
   };
 
-  console.log({product})
-
   return (
     <div className="product-card">
       <div className="card-container">

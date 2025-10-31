@@ -18,6 +18,7 @@ const ProductsPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   const subCategory = subCategories.find(sub => sub.id === subCategoryId);
+  const subCategoryTag = window.location.pathname.split("/").pop() ?? '';
 
   useEffect(() => {
     const loadStrategies = async () => {
@@ -27,14 +28,8 @@ const ProductsPage: React.FC = () => {
         setLoading(true);
         setError(null);
 
-        console.log('Loading strategies for subcategoryId:', subCategoryId);
+        console.log('Loading strategies for subcategoryId:', subCategoryTag);
         
-        // Debug: check available tags on first load
-        if (subCategoryId === 'sector::technology_ai') {
-          await AlgoliaService.debugAvailableTags(100);
-        }
-        
-        // Load different sections in parallel
         const [
           trendingResponse,
           copiesResponse,
@@ -45,27 +40,16 @@ const ProductsPage: React.FC = () => {
           diversifiedResponse,
           longTimeResponse
         ] = await Promise.all([
-          AlgoliaService.getTrendingStrategies(subCategoryId, 10),
-          AlgoliaService.getStrategiesByCopies(subCategoryId, 10),
-          AlgoliaService.getStrategiesByCapital(subCategoryId, 10),
-          AlgoliaService.getRecentPeakStrategies(subCategoryId, 10),
-          AlgoliaService.getDiscoverStrategies(subCategoryId, 10),
-          AlgoliaService.getFreshStrategies(subCategoryId, 10),
-          AlgoliaService.getDiversifiedStrategies(subCategoryId, 10),
-          AlgoliaService.getLongTimeInMarketStrategies(subCategoryId, 10)
+          AlgoliaService.getTrendingStrategies(subCategoryTag, 10),
+          AlgoliaService.getStrategiesByCopies(subCategoryTag, 10),
+          AlgoliaService.getStrategiesByCapital(subCategoryTag, 10),
+          AlgoliaService.getRecentPeakStrategies(subCategoryTag, 10),
+          AlgoliaService.getDiscoverStrategies(subCategoryTag, 10),
+          AlgoliaService.getFreshStrategies(subCategoryTag, 10),
+          AlgoliaService.getDiversifiedStrategies(subCategoryTag, 10),
+          AlgoliaService.getLongTimeInMarketStrategies(subCategoryTag, 10)
         ]);
         
-        console.log('Responses received:', {
-          trending: trendingResponse.hits.length,
-          copies: copiesResponse.hits.length,
-          capital: capitalResponse.hits.length,
-          peak: peakResponse.hits.length,
-          discover: discoverResponse.hits.length,
-          fresh: freshResponse.hits.length,
-          diversified: diversifiedResponse.hits.length,
-          longTime: longTimeResponse.hits.length
-        });
-
         const groups: ProductGroup[] = [];
 
         // Add sections with results
@@ -173,7 +157,7 @@ const ProductsPage: React.FC = () => {
                   return (
                     <Link 
                       key={strategy.Id} 
-                      to={`/portfolio/${strategy.Id}`}
+                      to={`/portfolio/${strategy.ExternalId}`}
                       style={{ textDecoration: 'none' }}
                     >
                       <ProductCard product={convertedProduct} />
