@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { categories } from '../data/mockData';
 import { ArrowLeft, TrendingUp } from 'lucide-react';
 import './Discovery.css';
@@ -116,13 +116,19 @@ const Discovery: React.FC = () => {
                                 <h3 className="search-section-title">Matching Portfolios</h3>
                                 <div className="matching-portfolios">
                                     {searchResults.map((portfolio: any) => (
-                                        <div key={portfolio.id} className="portfolio-result">
-                                            <img className="portfolio-avatar" src={portfolio.ProfileImageUrl}/>
-                                            <div className="portfolio-info">
-                                                <div className="portfolio-name">{portfolio.StrategyName}</div>
-                                                <div className="portfolio-ticker">{portfolio.StrategyTicker}</div>
+                                        <Link
+                                            to={`/portfolio/${portfolio.ExternalId}`}
+                                            key={portfolio.Id}
+                                            style={{ textDecoration: 'none' }}
+                                        >
+                                            <div className="portfolio-result">
+                                                <img className="portfolio-avatar" src={portfolio.ProfileImageUrl}/>
+                                                <div className="portfolio-info">
+                                                    <div className="portfolio-name">{portfolio.StrategyName}</div>
+                                                    <div className="portfolio-ticker">{portfolio.StrategyTicker}</div>
+                                                </div>
                                             </div>
-                                        </div>
+                                        </Link>
                                     ))}
                                 </div>
                             </div>
@@ -177,6 +183,27 @@ const Discovery: React.FC = () => {
                     >
                         <h3>Talk to Dub AI</h3>
                     </div>
+                </div>
+            </div>
+
+            <div className="categories-section">
+                <h2>Relevant to You</h2>
+                <div className="portfolio-grid huge-grid">
+
+                </div>
+            </div>
+
+            <div className="categories-section">
+                <h2>Continue Where You Left Off</h2>
+                <div className="portfolio-grid huge-grid">
+
+                </div>
+            </div>
+
+            <div className="categories-section">
+                <h2>Similar to What You Copied</h2>
+                <div className="portfolio-grid huge-grid">
+
                 </div>
             </div>
         </div>

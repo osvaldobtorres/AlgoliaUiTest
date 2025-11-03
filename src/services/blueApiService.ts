@@ -64,6 +64,37 @@ export interface Disclosure {
   fullDescription: string;
 }
 
+export interface BacktestData {
+  returns: any;
+  startDate: any;
+  endDate: any;
+  lastUpdatedAt: any;
+}
+
+export interface BluePortfolioStats {
+  creatorInvestmentAmount: string;
+  dubbersQuantity: string;
+  dubbingCapital: string;
+  createdAt: string;
+  firstDubTime: string;
+  annualYield: string;
+  allTimeReturns: number;
+  backtestData: BacktestData;
+  riskScore: any;
+  averageDaysBetweenRebalances: number;
+  daysSinceTheLastRebalance: number;
+  lastRebalanceDate: string;
+  rebalancesCount: number;
+  averageDaysBetweenRebalancesIncludingToday: number;
+}
+
+export interface BlueHistoricalData {
+  window: string;
+  strategyHistoricalData: {
+    close: number[];
+  };
+}
+
 export interface BluePortfolioData {
   creator: Creator;
   sponsoredCreator: any;
@@ -88,6 +119,39 @@ class BlueApiService {
       return data;
     } catch (error) {
       console.error('Error fetching portfolio from Blue API:', error);
+      throw error;
+    }
+  }
+
+  static async getPortfolioStats(externalId: string): Promise<BluePortfolioStats> {
+    try {
+      const response = await fetch(`https://prod.blue/strategies/v1/${externalId}`);
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch portfolio stats: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error fetching portfolio stats from Blue API:', error);
+      throw error;
+    }
+  }
+
+  static async getPortfolioHistoricalData(strategyId: string, window: string = 'YTD'): Promise<BlueHistoricalData> {
+    try {
+      const baseUrl = 'https://prod.blue/historical/portfolios/v3';
+      const response = await fetch(`${baseUrl}/${strategyId}?windows=${window}`);
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch portfolio historical data: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data[0];
+    } catch (error) {
+      console.error('Error fetching portfolio historical data from Blue API:', error);
       throw error;
     }
   }

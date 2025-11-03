@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, TrendingUp, Users, Copy } from 'lucide-react';
+import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
+import { ArrowLeft, Users, Copy } from 'lucide-react';
 import { investmentProducts } from '../data/mockData';
 import ProductCard from '../components/ProductCard';
-import BlueApiService, { BluePortfolioData, Equity } from '../services/blueApiService';
+import BlueApiService, { BluePortfolioData, BlueHistoricalData, Equity } from '../services/blueApiService';
 import './PortfolioDetails.css';
+import { AlgoliaService } from '../services/algoliaService';
 
 interface Asset {
     ticker: string;
@@ -24,31 +25,52 @@ interface CopierProfile {
 const PortfolioDetails: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
+    const location = useLocation();
     const [portfolioData, setPortfolioData] = useState<BluePortfolioData | null>(null);
+    const [historicalData, setHistoricalData] = useState<BlueHistoricalData | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [similarPortfolios, setSimilarPortfolios] = useState<any[]>([]);
+    const [loadingSimilar, setLoadingSimilar] = useState(false);
 
     const portfolio = investmentProducts.find(p => p.id === id);
 
-    // Fetch portfolio data from Blue API
+    // Fetch portfolio data from Blue API and similar portfolios from Algolia
     useEffect(() => {
-        const fetchPortfolioData = async () => {
+        const fetchData = async () => {
             if (!id) return;
 
             try {
                 setLoading(true);
                 setError(null);
+
+                // Fetch portfolio data from Blue API
                 const data = await BlueApiService.getPortfolioById(id);
                 setPortfolioData(data);
+
+                // Fetch historical data from Blue API
+                try {
+                    const histData = await BlueApiService.getPortfolioHistoricalData(id);
+                    setHistoricalData(histData);
+                } catch (histError) {
+                    console.error('Error fetching portfolio historical data:', histError);
+                    // Continue without historical data if they fail to load
+                }
+
+                // Fetch similar portfolios from Algolia
+                setLoadingSimilar(true);
+                const similarData = await AlgoliaService.getSimilarPortfolios(id);
+                setSimilarPortfolios(similarData || []);
             } catch (err) {
                 console.error('Error fetching portfolio data:', err);
                 setError('Failed to load portfolio data');
             } finally {
                 setLoading(false);
+                setLoadingSimilar(false);
             }
         };
 
-        fetchPortfolioData();
+        fetchData();
     }, [id]);
 
     const handleGoBack = () => {
@@ -82,7 +104,7 @@ const PortfolioDetails: React.FC = () => {
     }
 
     // Convert Blue API data to our Asset format
-    const portfolioAssets: Asset[] = portfolioData ? 
+    const portfolioAssets: Asset[] = portfolioData ?
         portfolioData.currentAllocation.equities.map(equity => ({
             ticker: equity.instrumentDto.ticker,
             name: equity.instrumentDto.companyName,
@@ -90,11 +112,6 @@ const PortfolioDetails: React.FC = () => {
             allocation: parseFloat(equity.fraction) * 100 // Convert fraction to percentage
         })).sort((a, b) => b.allocation - a.allocation) // Sort by allocation descending
         : [];
-
-    // Mock similar portfolios (fallback to existing logic)
-    const similarPortfolios = investmentProducts.filter(p =>
-        portfolio && p.id !== portfolio.id && p.category === portfolio.category
-    ).slice(0, 4);
 
     // Mock portfolios copied by same users (fallback to existing logic)
     const relatedPortfolios = investmentProducts.filter(p =>
@@ -109,47 +126,104 @@ const PortfolioDetails: React.FC = () => {
         { id: '4', name: 'Ana Oliveira', avatar: '👩‍🔬', copiedAmount: '$6.7K', joinedDate: '1 week' }
     ];
 
-    // Generate portfolio metrics
+    // Format capital with elegant rules: 3M, 220K, 1.2K, $9.5K
+    const formatCapital = (value: number): string => {
+        if (value >= 1000000) {
+            // Above 1M: show with 2 decimals if < 10M, no decimals if >= 10M
+            const millions = value / 1000000;
+            return millions >= 10
+                ? `$${Math.round(millions)}M`
+                : `$${millions.toFixed(2)}M`;
+        } else if (value >= 10000) {
+            // 10K to 1M: whole numbers only (220K, 55K)
+            return `$${Math.round(value / 1000)}K`;
+        } else if (value >= 1000) {
+            // 1K to 10K: show decimals (1.2K, 9.5K)
+            return `$${(value / 1000).toFixed(1)}K`;
+        } else {
+            // Below 1K: show whole dollars
+            return `$${Math.round(value)}`;
+        }
+    };
+
+    // Generate portfolio metrics using data from ProductCard navigation or mock data
     const generateMetrics = () => {
-        const thirtyDayReturn = ((Math.random() * 10) - 2).toFixed(2); // -2% to 8%
-        const allTimeReturn = ((Math.random() * 150) + 50).toFixed(2); // 50% to 200%
+        // First priority: data passed from ProductCard navigation
+        const passedMetrics = location.state?.portfolioMetrics;
+        if (passedMetrics) {
+            return {
+                thirtyDayReturn: passedMetrics.thirtyDayReturn,
+                allTimeReturn: passedMetrics.allTimeReturn,
+                totalCopiers: passedMetrics.totalCopiers,
+                totalCapital: formatCapital(passedMetrics.totalCapital) // Already formatted from ProductCard
+            };
+        }
+
+        // Fallback to mock data
+        const thirtyDayReturn = ((Math.random() * 10) - 2); // -2% to 8%
+        const allTimeReturn = ((Math.random() * 150) + 50); // 50% to 200%
         const totalCopiers = Math.floor(Math.random() * 5000) + 1000; // 1K to 6K
-        const totalCapital = (Math.random() * 50 + 10).toFixed(1); // $10M to $60M
+        const mockCapital = (Math.random() * 50000000) + 1000000; // $1M to $51M
 
         return {
-            thirtyDayReturn: parseFloat(thirtyDayReturn),
-            allTimeReturn: parseFloat(allTimeReturn),
+            thirtyDayReturn,
+            allTimeReturn,
             totalCopiers,
-            totalCapital: `$${totalCapital}M`
+            totalCapital: formatCapital(mockCapital)
         };
     };
 
     const metrics = generateMetrics();
 
-    // Generate YTD chart data
-    const generateYTDData = () => {
-        const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out'];
-        const points = [];
-        let currentValue = 100;
+    // Generate YTD chart path like ProductCard
+    const generateYTDChartPath = () => {
+        if (historicalData && historicalData.strategyHistoricalData && historicalData.strategyHistoricalData.close && historicalData.strategyHistoricalData.close.length > 0) {
+            const closedData = historicalData.strategyHistoricalData.close;
 
-        for (let i = 0; i < months.length; i++) {
-            const change = (Math.random() - 0.3) * 8; // Slight upward bias
-            currentValue += change;
-            points.push({
-                x: (i / (months.length - 1)) * 100,
-                y: ((120 - currentValue) / 40) * 100,
-                value: currentValue
+            // Find min and max values for normalization like ProductCard
+            const minValue = Math.min(...closedData);
+            const maxValue = Math.max(...closedData);
+            const range = maxValue - minValue;
+
+            const points = closedData.map((value, index) => {
+                const x = (index * 100) / Math.max(closedData.length - 1, 1); // Use 100% width
+                // Normalize and invert Y like ProductCard (0 at top, 46 at bottom)
+                const normalizedY = range === 0 ? 23 : (maxValue - value) / range;
+                const y = 2 + (normalizedY * 42); // Same as ProductCard: 2px margin, 42px usable
+
+                return `${index === 0 ? 'M' : 'L'}${x} ${y}`;
             });
+
+            return points.join(' ');
         }
 
-        return points;
+        // Fallback to mock data like ProductCard
+        const points = [];
+        for (let i = 0; i <= 6; i++) {
+            const x = (i * 100) / 6;
+            const y = 2 + Math.random() * 42;
+            points.push(`${i === 0 ? 'M' : 'L'}${x} ${y}`);
+        }
+        return points.join(' ');
     };
 
-    const ytdData = generateYTDData();
-    const currentPerformance = ytdData[ytdData.length - 1].value - 100;
-    const pathData = ytdData.map((point, index) =>
-        `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`
-    ).join(' ');
+    const getYTDChartColor = () => {
+        return '#38e07b';
+    };
+
+    // Calculate performance using real data when available
+    const currentPerformance = (() => {
+        if (historicalData && historicalData.strategyHistoricalData && historicalData.strategyHistoricalData.close && historicalData.strategyHistoricalData.close.length > 0) {
+            const closedData = historicalData.strategyHistoricalData.close;
+            const firstValue = closedData[0];
+            const lastValue = closedData[closedData.length - 1];
+            return ((lastValue - firstValue) / firstValue) * 100;
+        }
+        // Fallback to mock calculation
+        return ((Math.random() * 10) - 2);
+    })();
+
+    const pathData = generateYTDChartPath();
 
     return (
         <div className="portfolio-details">
@@ -158,18 +232,21 @@ const PortfolioDetails: React.FC = () => {
                 <button className="back-button" onClick={handleGoBack}>
                     <ArrowLeft size={20} />
                 </button>
-                <div className="portfolio-info">
-                    <div className="portfolio-main-info">
-                        <h1 className="portfolio-name">
-                            {portfolioData ? portfolioData.strategyInfo.strategyName : (portfolio?.name || 'Unknown Portfolio')}
-                        </h1>
-                        <span className="portfolio-ticker">
-                            {portfolioData ? portfolioData.strategyInfo.tickerName : (portfolio?.ticker || 'PORTFOLIO')}
-                        </span>
+                <div className='portfolio-info-aux-container'>
+                    <img className="card-icon" src={portfolioData?.strategyInfo?.profileImageUrl ?? ''} />
+                    <div className="portfolio-info">
+                        <div className="portfolio-main-info">
+                            <h1 className="portfolio-name">
+                                {portfolioData ? portfolioData.strategyInfo.strategyName : (portfolio?.name || 'Unknown Portfolio')}
+                            </h1>
+                            <span className="portfolio-ticker">
+                                {portfolioData ? portfolioData.strategyInfo.tickerName : (portfolio?.ticker || 'PORTFOLIO')}
+                            </span>
+                        </div>
+                        <p className="portfolio-description">
+                            {portfolioData?.strategyInfo?.strategyTagline}
+                        </p>
                     </div>
-                    <p className="portfolio-description">
-                        {portfolioData?.strategyInfo?.strategyTagline}
-                    </p>
                 </div>
             </div>
 
@@ -185,15 +262,17 @@ const PortfolioDetails: React.FC = () => {
                     <div className="metric-card">
                         <div className="metric-value">
                             <span className={metrics.thirtyDayReturn >= 0 ? 'positive' : 'negative'}>
-                                {metrics.thirtyDayReturn >= 0 ? '+' : ''}{metrics.thirtyDayReturn}%
+                                {metrics.thirtyDayReturn >= 0 ? '+' : ''}{metrics.thirtyDayReturn.toFixed(2)}%
                             </span>
                         </div>
                         <div className="metric-label">30D Returns</div>
                     </div>
 
                     <div className="metric-card">
-                        <div className="metric-value positive">
-                            +{metrics.allTimeReturn}%
+                        <div className="metric-value">
+                            <span className={metrics.allTimeReturn >= 0 ? 'positive' : 'negative'}>
+                                {metrics.allTimeReturn >= 0 ? '+' : ''}{metrics.allTimeReturn.toFixed(2)}%
+                            </span>
                         </div>
                         <div className="metric-label">All Time Returns</div>
                     </div>
@@ -208,61 +287,28 @@ const PortfolioDetails: React.FC = () => {
                         <div className="metric-label">Total Capital</div>
                     </div>
                 </div>
+
+                <p className="discovery-subtitle" style={{paddingTop: 10}}>
+                    {`Inception Date: ${new Date(portfolioData?.strategyInfo?.inceptionDate ?? '').toLocaleDateString()}`}
+                </p>
             </div>
 
             {/* YTD Performance Chart */}
             <div className="ytd-section">
                 <div className="ytd-header">
                     <h2>YTD Performance</h2>
-                    <div className="ytd-performance">
-                        <span className={`performance-value ${currentPerformance >= 0 ? 'positive' : 'negative'}`}>
-                            {currentPerformance >= 0 ? '+' : ''}{currentPerformance.toFixed(2)}%
-                        </span>
-                        <TrendingUp size={16} className="trend-icon" />
-                    </div>
                 </div>
                 <div className="ytd-chart">
-                    <svg width="100%" height="200" viewBox="0 0 100 100" preserveAspectRatio="none">
-                        <defs>
-                            <linearGradient id="chartGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                                <stop offset="0%" stopColor="rgba(56, 224, 123, 0.3)" />
-                                <stop offset="100%" stopColor="rgba(56, 224, 123, 0.05)" />
-                            </linearGradient>
-                        </defs>
-
-                        {/* Grid lines */}
-                        <g stroke="rgba(255,255,255,0.1)" strokeWidth="0.5">
-                            {[25, 50, 75].map(y => (
-                                <line key={y} x1="0" y1={y} x2="100" y2={y} />
-                            ))}
-                        </g>
-
-                        {/* Area under curve */}
-                        <path
-                            d={`${pathData} L 100 100 L 0 100 Z`}
-                            fill="url(#chartGradient)"
-                        />
-
-                        {/* Main line */}
+                    <svg width="100%" height="200" viewBox="0 0 100 46" preserveAspectRatio="xMidYMid meet">
+                        {/* Main line - clean without points */}
                         <path
                             d={pathData}
                             fill="none"
-                            stroke="#38e07b"
-                            strokeWidth="2"
+                            stroke={getYTDChartColor()}
+                            strokeLinecap="round"
+                            strokeWidth="1"
                             vectorEffect="non-scaling-stroke"
                         />
-
-                        {/* Data points */}
-                        {ytdData.map((point, index) => (
-                            <circle
-                                key={index}
-                                cx={point.x}
-                                cy={point.y}
-                                r="1.5"
-                                fill="#38e07b"
-                                vectorEffect="non-scaling-stroke"
-                            />
-                        ))}
                     </svg>
                 </div>
             </div>
@@ -302,11 +348,32 @@ const PortfolioDetails: React.FC = () => {
             <div className="similar-section">
                 <h2>Similar Portfolios</h2>
                 <div className="horizontal-scroll">
-                    {similarPortfolios.map(product => (
-                        <Link key={product.id} to={`/portfolio/${product.id}`}>
-                            <ProductCard product={product} />
-                        </Link>
-                    ))}
+                    {loadingSimilar ? (
+                        <p>Loading similar portfolios...</p>
+                    ) : similarPortfolios.length > 0 ? (
+                        similarPortfolios.map(portfolio => {
+                            // Transform Algolia data to match ProductCard expected format
+                            const transformedProduct = {
+                                id: portfolio.ExternalId,
+                                name: portfolio.StrategyName,
+                                ticker: portfolio.StrategyTicker,
+                                description: portfolio.StrategyTagline,
+                                category: portfolio.tags?.[0] || 'general',
+                                lastMonthReturns: portfolio.lastMonthReturns || 0,
+                                copiesCount: portfolio.copiesCount || 0,
+                                profileImage: portfolio.ProfileImageUrl,
+                                historicalReturns: portfolio.historicalReturns || [],
+                                totalReturns: portfolio.totalReturns,
+                                totalCapital: portfolio.totalCapital
+                            };
+
+                            return (
+                                <ProductCard key={portfolio.ExternalId} product={transformedProduct} />
+                            );
+                        })
+                    ) : (
+                        <p>No similar portfolios found.</p>
+                    )}
                 </div>
             </div>
 
@@ -317,9 +384,7 @@ const PortfolioDetails: React.FC = () => {
                 </div>
                 <div className="horizontal-scroll">
                     {relatedPortfolios.map(product => (
-                        <Link key={product.id} to={`/portfolio/${product.id}`}>
-                            <ProductCard product={product} />
-                        </Link>
+                        <ProductCard key={product.id} product={product} />
                     ))}
                 </div>
             </div>

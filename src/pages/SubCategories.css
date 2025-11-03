@@ -195,7 +195,7 @@
 /* Responsiveness */
 @media (max-width: 480px) {
   .subcategories-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr 1fr;
   }
   
   .subcategory-card {

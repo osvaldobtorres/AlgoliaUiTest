@@ -13,7 +13,7 @@ export interface AlgoliaStrategy {
     StrategyTicker: string;
     AccountId: number;
     UserUuid: string;
-    profileImageUrl: string;
+    ProfileImageUrl: string;
     StrategyDescription: string;
     StrategyTagline: string;
     lastRebalanceDate: string;
@@ -25,6 +25,7 @@ export interface AlgoliaStrategy {
     copiesCount: number;
     lastMonthReturns: number;
     totalReturns: number;
+    historicalReturns: number[];
     currentAllocation: Array<{
         ticker: string;
         sector: string | null;
@@ -205,6 +206,61 @@ export class AlgoliaService {
         return result as SearchResponse;
     }
 
+    static async getSimilarPortfolios(externalId: string, hitsPerPage = 20): Promise<any> {
+        // 1) Buscar o portfolio base
+        const baseRes = await client.searchSingleIndex({
+            indexName: 'Strategies',
+            searchParams: {
+                query: externalId,
+                hitsPerPage: 1
+            }
+        });
+
+        const base = baseRes.hits[0] as any;
+        if (!base) return { 
+                hits: [],
+                nbHits: 0,
+                page: 0,
+                nbPages: 0,
+                hitsPerPage: 0,
+                processingTimeMS: 0,
+                exhaustiveNbHits: false,
+                query: '',
+                params: ''
+            }
+
+        // 2) Extrair componentes principais de similaridade
+        const similarTags = base.tags || [];
+
+        // pegar top 3 tickers mais pesados
+        const tickers = (base.currentAllocation || [])
+            .sort((a: any, b: any) => b.fraction - a.fraction)
+            .slice(0, 3)
+            .map((x: any) => x.ticker);
+
+        // calcular faixa de retorno para manter mesmo perfil
+        const minReturn = base.lastMonthReturns - 0.05;
+        const maxReturn = base.lastMonthReturns + 0.05;
+
+        // 3) Construir query de similaridade
+        const search = await client.searchSingleIndex({
+            indexName: 'Strategies',
+            searchParams: {
+                hitsPerPage: hitsPerPage,
+                optionalFilters: [
+                    ...similarTags.map((tag: any) => `tags:${tag}`),
+                    ...tickers.map((t: any) => `currentAllocation.ticker:${t}`)
+                ],
+                filters: `lastMonthReturns >= ${minReturn} AND lastMonthReturns <= ${maxReturn}`,
+                relevancyStrictness: 60
+            }
+        });
+
+        // 4) Remover o próprio portfolio da lista
+        const filtered = search.hits.filter((p: any) => p.ExternalId !== externalId);
+        return filtered;
+    }
+
     // Get long time in market strategies (CreatedAt > 1 year ago)
     static async getLongTimeInMarketStrategies(subcategoryId: string, hitsPerPage: number = 10): Promise<SearchResponse> {
         const ONE_YEAR = 365 * 24 * 60 * 60;
@@ -288,7 +344,8 @@ export class AlgoliaService {
             totalReturns: strategy.totalReturns,
             currentAllocation: strategy.currentAllocation,
             externalId: strategy.ExternalId,
-            profileImage: strategy.profileImageUrl ?? 'https://d1vuy7y9jvyriv.cloudfront.net/portfolios/default/default.png'
+            historicalReturns: strategy.historicalReturns,
+            profileImage: strategy.ProfileImageUrl ?? 'https://d1vuy7y9jvyriv.cloudfront.net/portfolios/default/default.png'
         };
     }
 }

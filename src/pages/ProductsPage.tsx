@@ -155,13 +155,7 @@ const ProductsPage: React.FC = () => {
                 {group.strategies.map((strategy) => {
                   const convertedProduct = AlgoliaService.convertToInvestmentProduct(strategy);
                   return (
-                    <Link 
-                      key={strategy.Id} 
-                      to={`/portfolio/${strategy.ExternalId}`}
-                      style={{ textDecoration: 'none' }}
-                    >
-                      <ProductCard product={convertedProduct} />
-                    </Link>
+                    <ProductCard key={strategy.Id} product={convertedProduct} />
                   );
                 })}
               </div>
