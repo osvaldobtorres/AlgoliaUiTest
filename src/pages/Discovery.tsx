@@ -141,15 +141,15 @@ const Discovery: React.FC = () => {
                                 <div className="matching-portfolios">
                                     {portfolioSearchResults.map((portfolio: any) => (
                                         <Link
-                                            to={`/portfolio/${portfolio.ExternalId}`}
-                                            key={portfolio.ExternalId}
+                                            to={`/portfolio/${portfolio.externalId}`}
+                                            key={portfolio.externalId}
                                             style={{ textDecoration: 'none' }}
                                         >
                                             <div className="portfolio-result">
-                                                <img className="portfolio-avatar" src={portfolio.ProfileImageUrl}/>
+                                                <img className="portfolio-avatar" src={portfolio.profileImageUrl}/>
                                                 <div className="portfolio-info">
-                                                    <div className="portfolio-name">{portfolio.StrategyName}</div>
-                                                    <div className="portfolio-ticker">{portfolio.StrategyTicker}</div>
+                                                    <div className="portfolio-name">{portfolio.strategyName}</div>
+                                                    <div className="portfolio-ticker">{portfolio.strategyTicker}</div>
                                                 </div>
                                             </div>
                                         </Link>
