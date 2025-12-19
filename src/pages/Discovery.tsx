@@ -9,7 +9,10 @@ const Discovery: React.FC = () => {
     const navigate = useNavigate();
     const [searchQuery, setSearchQuery] = useState('');
     const [isSearchFocused, setIsSearchFocused] = useState(false);
-    const [searchResults, setSearchResults] = useState<any>([]);
+    const [portfolioSearchResults, setPortfolioSearchResults] = useState<any>([]);
+    const [usersSearchResults, setUsersSearchResults] = useState<any>([]);
+    const [stocksSearchResults, setStocksSearchResults] = useState<any>([]);
+    const [creatorType, setCreatorType] = useState(1);
 
     const handleCategoryClick = (categoryId: string) => {
         navigate(`/category/${categoryId}`);
@@ -32,15 +35,23 @@ const Discovery: React.FC = () => {
     };
 
     const getSearchResults = async () => {
-        const results = await AlgoliaService.search(searchQuery);
-        setSearchResults(results.hits);
+        const actualCreatorType = creatorType === 1 ? [1] : [2, 3];
+        const results = await AlgoliaService.multiSearch(searchQuery, actualCreatorType);
+
+        const portfolioResults = results.find((r: any) => r.index === 'Portfolios');
+        const usersResults = results.find((r: any) => r.index === 'Users');
+        const stocksResults = results.find((r: any) => r.index === 'Stocks');
+        
+        setPortfolioSearchResults(portfolioResults!.hits);
+        setUsersSearchResults(usersResults!.hits);
+        setStocksSearchResults(stocksResults!.hits);
     }
 
     useEffect(() => {
         if (searchQuery.length != 0) {
             getSearchResults();
         }
-    }, [searchQuery]);
+    }, [searchQuery, creatorType]);
 
     // Mock search data
     const popularSearches = [
@@ -98,6 +109,19 @@ const Discovery: React.FC = () => {
 
                         {/* Search Results */}
                         <div className="search-results">
+                            {/* Creator Type Dropdown */}
+                            <div className="search-section">
+                                <h3 className="search-section-title">Creator Type</h3>
+                                <select 
+                                    value={creatorType} 
+                                    onChange={(e) => setCreatorType(Number(e.target.value))}
+                                    className="creator-type-select"
+                                >
+                                    <option value={1}>Regular Creators</option>
+                                    <option value={2}>Premium Creators</option>
+                                </select>
+                            </div>
+
                             {/* Popular Searches */}
                             <div className="search-section">
                                 <h3 className="search-section-title">Popular Searches</h3>
@@ -113,12 +137,12 @@ const Discovery: React.FC = () => {
 
                             {/* Matching Portfolios */}
                             <div className="search-section">
-                                <h3 className="search-section-title">Matching Portfolioss</h3>
+                                <h3 className="search-section-title">Matching Portfolios</h3>
                                 <div className="matching-portfolios">
-                                    {searchResults.map((portfolio: any) => (
+                                    {portfolioSearchResults.map((portfolio: any) => (
                                         <Link
                                             to={`/portfolio/${portfolio.ExternalId}`}
-                                            key={portfolio.Id}
+                                            key={portfolio.ExternalId}
                                             style={{ textDecoration: 'none' }}
                                         >
                                             <div className="portfolio-result">
@@ -126,6 +150,50 @@ const Discovery: React.FC = () => {
                                                 <div className="portfolio-info">
                                                     <div className="portfolio-name">{portfolio.StrategyName}</div>
                                                     <div className="portfolio-ticker">{portfolio.StrategyTicker}</div>
+                                                </div>
+                                            </div>
+                                        </Link>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Matching Users */}
+                            <div className="search-section">
+                                <h3 className="search-section-title">Matching Users</h3>
+                                <div className="matching-portfolios">
+                                    {usersSearchResults.map((user: any) => (
+                                        <Link
+                                            to={`/`}
+                                            key={user.externalId}
+                                            style={{ textDecoration: 'none' }}
+                                        >
+                                            <div className="portfolio-result">
+                                                <img className="portfolio-avatar" src={user.profileImageUrl}/>
+                                                <div className="portfolio-info">
+                                                    <div className="portfolio-name">{user.name}</div>
+                                                    <div className="portfolio-ticker">{user.handle}</div>
+                                                </div>
+                                            </div>
+                                        </Link>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Matching Stocks */}
+                            <div className="search-section">
+                                <h3 className="search-section-title">Matching Stocks</h3>
+                                <div className="matching-portfolios">
+                                    {stocksSearchResults.map((stock: any) => (
+                                        <Link
+                                            to={`/`}
+                                            key={stock.externalId}
+                                            style={{ textDecoration: 'none' }}
+                                        >
+                                            <div className="portfolio-result">
+                                                <img className="portfolio-avatar" src={stock.imageUrl}/>
+                                                <div className="portfolio-info">
+                                                    <div className="portfolio-name">{stock.name}</div>
+                                                    <div className="portfolio-ticker">{stock.ticker}</div>
                                                 </div>
                                             </div>
                                         </Link>

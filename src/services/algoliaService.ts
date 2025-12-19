@@ -167,6 +167,47 @@ export class AlgoliaService {
         return result as SearchResponse;
     }
 
+    static async multiSearch(
+        searchTerm: string,
+        creatorTypes: number[],
+        hitsPerPage: number = 5
+    ): Promise<SearchResponse[]> {
+        let facetFilters: string[] | string[][] | undefined;
+
+        if (creatorTypes.length === 1) {
+            facetFilters = [`creatorType:${creatorTypes[0]}`];
+        } else if (creatorTypes.length > 1) {
+            facetFilters = [creatorTypes.map(t => `creatorType:${t}`)];
+        }
+
+        const result = await client.search({
+            requests: [
+                {
+                    indexName: 'Portfolios',
+                    query: searchTerm,
+                    hitsPerPage,
+                    facetFilters,
+                    clickAnalytics: true
+                },
+                {
+                    indexName: 'Users',
+                    query: searchTerm,
+                    hitsPerPage,
+                    facetFilters,
+                    clickAnalytics: true
+                },
+                {
+                    indexName: 'Stocks',
+                    query: searchTerm,
+                    hitsPerPage,
+                    clickAnalytics: true
+                }
+            ]
+        });
+
+        return result.results as SearchResponse[];
+    }
+
     // Get random/discover strategies (mixed sorting)
     static async getDiscoverStrategies(subcategoryId: string, hitsPerPage: number = 10): Promise<SearchResponse> {
         const result = await client.searchSingleIndex({
@@ -217,17 +258,17 @@ export class AlgoliaService {
         });
 
         const base = baseRes.hits[0] as any;
-        if (!base) return { 
-                hits: [],
-                nbHits: 0,
-                page: 0,
-                nbPages: 0,
-                hitsPerPage: 0,
-                processingTimeMS: 0,
-                exhaustiveNbHits: false,
-                query: '',
-                params: ''
-            }
+        if (!base) return {
+            hits: [],
+            nbHits: 0,
+            page: 0,
+            nbPages: 0,
+            hitsPerPage: 0,
+            processingTimeMS: 0,
+            exhaustiveNbHits: false,
+            query: '',
+            params: ''
+        }
 
         // 2) Extrair componentes principais de similaridade
         const similarTags = base.tags || [];
