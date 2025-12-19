@@ -113,7 +113,7 @@ const Discovery: React.FC = () => {
 
                             {/* Matching Portfolios */}
                             <div className="search-section">
-                                <h3 className="search-section-title">Matching Portfolios</h3>
+                                <h3 className="search-section-title">Matching Portfolioss</h3>
                                 <div className="matching-portfolios">
                                     {searchResults.map((portfolio: any) => (
                                         <Link
